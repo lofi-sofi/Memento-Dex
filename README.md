@@ -1,9 +1,9 @@
 # Memento Dex
 
-**A short game about the things you wrote down, and the person who wrote them.**
+**A short game about the things you remember, and the things you don't.**
 
-A browser-based creature collector about memory — how we keep it, how we lose it, and
-the two very different ways you can answer someone who remembers it differently than you do.
+A creature collector game about memory — how we keep it, how we lose it, and
+different ways you can meet someone whose reality might be different than yours.
 
 🔗 **[Read the site →](https://lofi-sofi.github.io/Memento-Dex/)**
 
@@ -17,22 +17,17 @@ This is the landing page and public dev log for the game — not the game itself
 | --- | --- |
 | `index.html` | The whole site. HTML, CSS and JS in one file. No build step, no dependencies. |
 
-Open `index.html` in any browser to view it locally. That's the entire setup.
-
 ---
 
 ## About the game
 
-If you were a kid with a handheld, you know the ritual: meet the creature, catch the
+If you were a kid with a handheld, you know the ritual: meet a creature, catch a
 creature, watch the entry appear in your index. Memento Dex is built on that muscle
 memory on purpose — the format is doing work here, not decoration.
 
 It's a game about cognitive decline, and the angle matters: nobody in it is a monster,
 and forgetting is not the horror. The goal is that you come out the other side with a
-little more patience for someone in your life, not a little more fear of them.
-
-The game ends twice — once for correcting someone, once for meeting them where they
-are — and doesn't tell you which one you got right.
+little more patience, not a little more fear.
 
 **Status:** in development. Story and art in progress, prototype playable, no date yet.
 
