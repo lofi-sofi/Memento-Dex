@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memento Dex — a short game about what you wrote down</title>
+<meta name="description" content="A short, browser-based creature collector about memory, record-keeping, and the two ways you can answer someone who remembers it differently. In development.">
+
+<meta property="og:title" content="Memento Dex">
+<meta property="og:description" content="A short creature collector about memory, record-keeping, and what it costs to be corrected. In development.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   MEMENTO DEX — landing page
+   Single file. No build step. Edit the CONFIG block in the
+   <script> at the bottom to set your form endpoint and add
+   dev blog entries.
+   ============================================================ */
+
+:root{
+  /* ---- palette: index card stock, honey oak, cold screen glow ---- */
+  --paper:      #E6E3D6;
+  --card:       #EFEDE3;
+  --ink:        #26251F;
+  --ink-soft:   #66624F;
+  --oak:        #A8752F;
+  --glow:       #4E7F8E;
+  --rule:       rgba(120,114,92,.16);
+  --rule-hard:  rgba(120,114,92,.34);
+
+  /* ---- baseline grid: the page is ruled paper, so everything
+          answers to a 30px rhythm ---- */
+  --line: 30px;
+
+  --f-display: "Zilla Slab", Georgia, serif;
+  --f-body:    "IBM Plex Sans", system-ui, sans-serif;
+  --f-mono:    "IBM Plex Mono", ui-monospace, monospace;
+}
+
+*{ box-sizing:border-box; }
+
+html{ -webkit-text-size-adjust:100%; }
+
+body{
+  margin:0;
+  background-color:var(--paper);
+  /* the ruling. faint enough to feel like paper, not like a table */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--line) - 1px),
+    var(--rule) calc(var(--line) - 1px),
+    var(--rule) var(--line)
+  );
+  background-position: 0 8px;
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:16px;
+  line-height:var(--line);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* the margin rule — the one thing that makes this a page and not a website */
+.sheet{
+  position:relative;
+  max-width:760px;
+  margin:0 auto;
+  padding:0 28px 90px 28px;
+}
+.sheet::before{
+  content:"";
+  position:absolute;
+  top:0; bottom:0; left:14px;
+  width:1px;
+  background:var(--oak);
+  opacity:.45;
+}
+
+a{ color:inherit; }
+
+/* ---------- header ---------- */
+.masthead{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  padding:calc(var(--line) * 1.5) 0 calc(var(--line) * .5);
+  border-bottom:1px solid var(--rule-hard);
+  margin-bottom:calc(var(--line) * 2);
+}
+.wordmark{
+  font-family:var(--f-mono);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  margin:0;
+}
+.status{
+  font-family:var(--f-mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.status .dot{
+  width:6px; height:6px; border-radius:50%;
+  background:var(--glow);
+  display:inline-block;
+  margin-right:8px; /* fallback where flex `gap` is unsupported */
+}
+
+/* ---------- entry label ---------- */
+.entry-no{
+  font-family:var(--f-mono);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--oak);
+  margin:0 0 10px;
+}
+
+/* ---------- the specimen card (hero) ---------- */
+.card{
+  background:var(--card);
+  border:1px solid var(--rule-hard);
+  border-left:3px solid var(--oak);
+  padding:26px 28px 30px;
+  box-shadow:0 1px 0 rgba(120,114,92,.18);
+}
+
+.title{
+  font-family:var(--f-display);
+  font-weight:700;
+  font-size:clamp(2.6rem, 9vw, 4.15rem);
+  line-height:1.02;
+  letter-spacing:-.022em;
+  margin:0 0 6px;
+}
+.subtitle{
+  font-family:var(--f-display);
+  font-weight:400;
+  font-style:italic;
+  font-size:clamp(1.05rem, 3.4vw, 1.3rem);
+  line-height:1.45;
+  color:var(--ink-soft);
+  margin:0 0 26px;
+  max-width:34ch;
+}
+
+/* the filled-in fields */
+.fields{
+  border-top:1px solid var(--rule-hard);
+}
+.field{
+  display:grid;
+  grid-template-columns:98px 1fr;
+  gap:0 20px;
+  padding:12px 0;
+  border-bottom:1px dotted var(--rule-hard);
+}
+.field:last-child{ border-bottom:0; padding-bottom:0; }
+.field dt{
+  font-family:var(--f-mono);
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  padding-top:5px;
+}
+.field dd{
+  margin:0;
+  font-size:16px;
+  line-height:1.6;
+}
+.field dd em{
+  font-family:var(--f-display);
+  font-style:italic;
+  color:var(--ink);
+}
+
+/* No entrance animation on the record itself. The content is
+   always present — screenshots, PDF exports and social preview
+   crawlers all capture a complete card. */
+
+/* ---------- section headings ---------- */
+.sec{ margin-top:calc(var(--line) * 2.6); }
+.sec-head{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  margin-bottom:calc(var(--line) * .8);
+  padding-bottom:8px;
+  border-bottom:1px solid var(--rule-hard);
+}
+.sec-head h2{
+  font-family:var(--f-mono);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  margin:0;
+}
+.sec-head .num{
+  font-family:var(--f-mono);
+  font-size:12px;
+  font-weight:600;
+  color:var(--oak);
+  letter-spacing:.1em;
+  margin-right:14px; /* fallback where flex `gap` is unsupported */
+}
+
+/* ---------- notes (themes) ---------- */
+.note{ margin-bottom:calc(var(--line) * 1.1); max-width:60ch; }
+.note h3{
+  font-family:var(--f-display);
+  font-weight:500;
+  font-size:1.42rem;
+  line-height:1.28;
+  letter-spacing:-.012em;
+  margin:0 0 6px;
+}
+.note p{ margin:0; color:var(--ink-soft); line-height:1.65; }
+
+/* ---------- author's note ---------- */
+.desk{
+  border-left:3px solid var(--glow);
+  padding:4px 0 4px 22px;
+  max-width:60ch;
+}
+.desk p{ margin:0 0 14px; line-height:1.7; }
+.desk p:last-child{ margin-bottom:0; }
+.sign{
+  font-family:var(--f-mono);
+  font-size:11.5px;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+
+/* ---------- signup ---------- */
+.signup{
+  margin-top:calc(var(--line) * 1.6);
+  background:var(--card);
+  border:1px solid var(--rule-hard);
+  padding:24px 26px 26px;
+}
+.signup h2{
+  font-family:var(--f-display);
+  font-weight:700;
+  font-size:1.45rem;
+  line-height:1.25;
+  margin:0 0 6px;
+  letter-spacing:-.012em;
+}
+.signup .why{
+  margin:0 0 18px;
+  color:var(--ink-soft);
+  font-size:15px;
+  line-height:1.6;
+  max-width:48ch;
+}
+.row{ display:flex; gap:10px; flex-wrap:wrap; }
+.row > input[type=email]{ margin-right:10px; } /* gap fallback */
+@supports (gap:1px){ .row > input[type=email]{ margin-right:0 } }
+input[type=email]{
+  flex:1 1 240px;
+  min-width:0;
+  font-family:var(--f-mono);
+  font-size:14px;
+  padding:13px 14px;
+  color:var(--ink);
+  background:var(--paper);
+  border:1px solid var(--rule-hard);
+  border-radius:0;
+}
+input[type=email]::placeholder{ color:var(--ink-soft); opacity:.75; }
+input[type=email]:focus-visible,
+button:focus-visible,
+a:focus-visible{
+  outline:2px solid var(--glow);
+  outline-offset:2px;
+}
+button{
+  font-family:var(--f-mono);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  padding:13px 22px;
+  color:var(--paper);
+  background:var(--ink);
+  border:1px solid var(--ink);
+  border-radius:0;
+  cursor:pointer;
+  transition:background .16s ease, color .16s ease;
+}
+button:hover{ background:var(--oak); border-color:var(--oak); }
+button[disabled]{ opacity:.5; cursor:default; }
+.fineprint{
+  margin:14px 0 0;
+  font-family:var(--f-mono);
+  font-size:11px;
+  line-height:1.7;
+  letter-spacing:.03em;
+  color:var(--ink-soft);
+}
+.fineprint a{ color:var(--glow); text-underline-offset:3px; }
+.msg{
+  margin:14px 0 0;
+  font-family:var(--f-mono);
+  font-size:12.5px;
+  line-height:1.65;
+  letter-spacing:.03em;
+}
+.msg.ok{ color:var(--glow); }
+.msg.err{ color:#9A4A2E; }
+.hp{ position:absolute; left:-9999px; opacity:0; height:0; width:0; }
+
+/* ---------- dev blog ---------- */
+.log-entry{
+  padding:calc(var(--line) * .7) 0;
+  border-bottom:1px dotted var(--rule-hard);
+  max-width:62ch;
+}
+.log-entry:last-child{ border-bottom:0; }
+.log-meta{
+  font-family:var(--f-mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--oak);
+  margin:0 0 4px;
+}
+.log-entry h3{
+  font-family:var(--f-display);
+  font-weight:500;
+  font-size:1.24rem;
+  line-height:1.3;
+  margin:0 0 6px;
+}
+.log-entry p{ margin:0 0 10px; color:var(--ink-soft); line-height:1.68; }
+.log-entry p:last-child{ margin-bottom:0; }
+.log-empty{
+  font-family:var(--f-mono);
+  font-size:13px;
+  color:var(--ink-soft);
+  line-height:1.7;
+}
+
+/* ---------- footer ---------- */
+footer{
+  margin-top:calc(var(--line) * 2.4);
+  padding-top:calc(var(--line) * .7);
+  border-top:1px solid var(--rule-hard);
+  font-family:var(--f-mono);
+  font-size:11px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:wrap;
+}
+footer a{ color:var(--ink-soft); text-underline-offset:3px; }
+footer a:hover{ color:var(--oak); }
+
+/* ---------- small screens ---------- */
+@media (max-width:560px){
+  .sheet{ padding-left:22px; padding-right:18px; }
+  .sheet::before{ left:8px; }
+  .card{ padding:22px 20px 24px; }
+  .signup{ padding:20px 18px 22px; }
+  .field{ grid-template-columns:1fr; gap:2px; padding:11px 0; }
+  .field dt{ padding-top:0; }
+  button{ width:100%; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ transition-duration:.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<main class="sheet">
+
+  <header class="masthead">
+    <p class="wordmark">Memento&nbsp;Dex</p>
+    <p class="status"><span class="dot" aria-hidden="true"></span>In development · 2026</p>
+  </header>
+
+  <!-- ============ HERO: the game as its own field log entry ============ -->
+  <p class="entry-no">Entry N° 001 — Specimen record</p>
+
+  <section class="card" aria-labelledby="title">
+    <h1 class="title" id="title">Memento&nbsp;Dex</h1>
+    <p class="subtitle">A short game about the things you wrote down, and the person who wrote them.</p>
+
+    <dl class="fields">
+      <div class="field">
+        <dt>Form</dt>
+        <dd>Creature collector. Catch them, log them, fill the index.</dd>
+      </div>
+      <div class="field">
+        <dt>Length</dt>
+        <dd>Short. One sitting. Plays in a browser.</dd>
+      </div>
+      <div class="field">
+        <dt>Subject</dt>
+        <dd><em>Memory — how we keep it, how we lose it, and the two very different ways you can answer someone who remembers it differently than you do.</em></dd>
+      </div>
+      <div class="field">
+        <dt>Status</dt>
+        <dd>Story and art in progress. Prototype playable. No date yet.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- ============ SIGNUP ============ -->
+  <section class="signup" aria-labelledby="signup-h">
+    <h2 id="signup-h">Get told when there's something to play.</h2>
+    <p class="why">One list, low volume. You'll hear from me when the demo is playable and when it launches. That's it — no drip campaign, no newsletter I don't have time to write.</p>
+
+    <form id="signup-form" novalidate>
+      <div class="row">
+        <label for="email" class="hp">Email address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+        <input type="text" name="_gotcha" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit" id="submit-btn">Add me</button>
+      </div>
+      <p class="msg" id="form-msg" role="status" aria-live="polite"></p>
+      <noscript>
+        <p class="msg err">This form needs JavaScript. Email
+        <a href="mailto:lofisophidev@gmail.com?subject=Memento%20Dex%20—%20keep%20me%20posted">lofisophidev@gmail.com</a>
+        and I'll add you by hand.</p>
+      </noscript>
+      <p class="fineprint">
+        Or just email <a href="mailto:lofisophidev@gmail.com?subject=Memento%20Dex%20—%20keep%20me%20posted">lofisophidev@gmail.com</a>.
+        Your address goes nowhere else and gets deleted if you ask.
+      </p>
+    </form>
+  </section>
+
+  <!-- ============ THEMES ============ -->
+  <section class="sec" aria-labelledby="about-h">
+    <div class="sec-head">
+      <span class="num">N° 002</span>
+      <h2 id="about-h">What it's about</h2>
+    </div>
+
+    <div class="note">
+      <h3>You already know how to play this.</h3>
+      <p>If you were a kid with a handheld, you know the ritual: meet the creature, catch the creature, watch the entry appear in your index. The completionist itch. The satisfaction of a record with no gaps in it. Memento Dex is built on that muscle memory on purpose — the format is doing work here, not decoration.</p>
+    </div>
+
+    <div class="note">
+      <h3>A record is not the same thing as what happened.</h3>
+      <p>We treat our own memories the way we treat a dex entry: filed, permanent, verifiable. They aren't. Everyone's recollection drifts — smoothed over, filled in, quietly revised. Most of the time nobody notices, and most of the time it doesn't matter much. This game is about what it feels like from the inside when it starts to.</p>
+    </div>
+
+    <div class="note">
+      <h3>There are two ways to answer someone who's wrong.</h3>
+      <p>You can correct them. Or you can meet them where they are and move the conversation somewhere kinder. Both come from love. They produce completely different afternoons. The game ends twice, once for each, and doesn't tell you which one you got right — because the people who actually do this work every day are still arguing about it.</p>
+    </div>
+  </section>
+
+  <!-- ============ AUTHOR'S NOTE ============ -->
+  <section class="sec" aria-labelledby="desk-h">
+    <div class="sec-head">
+      <span class="num">N° 003</span>
+      <h2 id="desk-h">From the desk</h2>
+    </div>
+
+    <div class="desk">
+      <p>I'm making a small game about cognitive decline, and I want to be clear about the angle: nobody in it is a monster, and forgetting is not the horror. The goal is that you come out the other side with a little more patience for someone in your life — not a little more fear of them.</p>
+      <p>It's being built in the open. The field notes below are the actual log: what got made, what broke, what I changed my mind about. If you want the unvarnished version of how a first game gets built, that's the part to read.</p>
+      <p class="sign">— Sophi, solo dev</p>
+    </div>
+  </section>
+
+  <!-- ============ DEV BLOG ============ -->
+  <section class="sec" aria-labelledby="log-h">
+    <div class="sec-head">
+      <span class="num">N° 004</span>
+      <h2 id="log-h">Field notes</h2>
+    </div>
+    <div id="devlog"></div>
+    <noscript>
+      <p class="log-empty">Field notes need JavaScript to display.
+      For updates, email <a href="mailto:lofisophidev@gmail.com">lofisophidev@gmail.com</a>.</p>
+    </noscript>
+  </section>
+
+  <footer>
+    <span>Memento Dex — in development</span>
+    <span><a href="mailto:lofisophidev@gmail.com">lofisophidev@gmail.com</a></span>
+  </footer>
+
+</main>
+
+<script>
+/* ==============================================================
+   CONFIG — this is the only part you need to touch.
+   ============================================================== */
+
+/* 1. THE EMAIL FORM
+   Sign up free at https://formspree.io , create a form, and paste
+   the endpoint URL below. It looks like:
+       https://formspree.io/f/abcdwxyz
+   Until you paste it in, the form politely points people at your
+   email address instead of silently failing.                     */
+
+const FORMSPREE_ENDPOINT = "";
+
+
+/* 2. THE DEV BLOG
+   Add a new entry by copying one block and putting it at the TOP
+   of the list. Newest first. `body` can be one string or several
+   (each becomes its own paragraph).                              */
+
+const DEV_LOG = [
+
+  {
+    date: "2026-08-05",
+    title: "Naming things, and a coincidence I'm keeping",
+    body: [
+      "Checked whether anyone else had claimed Memento Dex. Nobody has. What I did find: Memento is a real move in the games I grew up with — the user faints, and in exchange the opponent gets weaker. You give yourself up so the other one has an easier time of it.",
+      "I did not plan that. I'm taking it anyway."
+    ]
+  },
+
+  {
+    date: "2026-08-01",
+    title: "Six colours for six feelings",
+    body: [
+      "Working on the palette. The game needs six emotional registers a player can read instantly without being told, and the house it's set in needs to feel like it was decorated around 1991 and never touched again. Oatmeal carpet. Honey oak. The particular blue a TV throws on a wall at night.",
+      "Harder than it sounds. Generic sad-game greys do nothing — you need the specificity of a real room someone actually lived in."
+    ]
+  },
+
+];
+
+/* ==============================================================
+   Below here is machinery. You shouldn't need to edit it.
+   ============================================================== */
+
+(function renderLog(){
+  const mount = document.getElementById("devlog");
+  if (!mount) return;
+
+  if (!DEV_LOG.length){
+    mount.innerHTML = '<p class="log-empty">No entries yet. First one goes up soon.</p>';
+    return;
+  }
+
+  const fmt = (iso) => {
+    const d = new Date(iso + "T12:00:00");
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+  };
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]
+  ));
+
+  mount.innerHTML = DEV_LOG.map(entry => {
+    const paras = (Array.isArray(entry.body) ? entry.body : [entry.body])
+      .map(p => `<p>${esc(p)}</p>`).join("");
+    return `<article class="log-entry">
+        <p class="log-meta">${esc(fmt(entry.date))}</p>
+        <h3>${esc(entry.title)}</h3>
+        ${paras}
+      </article>`;
+  }).join("");
+})();
+
+
+(function wireForm(){
+  const form = document.getElementById("signup-form");
+  const input = document.getElementById("email");
+  const btn = document.getElementById("submit-btn");
+  const msg = document.getElementById("form-msg");
+  if (!form) return;
+
+  const say = (text, kind) => {
+    msg.textContent = text;
+    msg.className = "msg " + (kind || "");
+  };
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = input.value.trim();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+      say("That doesn't look like an email address. Check it and try again.", "err");
+      input.focus();
+      return;
+    }
+
+    // Endpoint not configured yet — send them somewhere that works.
+    if (!FORMSPREE_ENDPOINT){
+      say("The list isn't wired up yet. Email lofisophidev@gmail.com and I'll add you by hand.", "err");
+      return;
+    }
+
+    btn.disabled = true;
+    say("Adding you…", "");
+
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        headers: { "Accept": "application/json" },
+        body: new FormData(form)
+      });
+
+      if (res.ok){
+        form.querySelector(".row").style.display = "none";
+        say("You're on the list. I'll write when there's something to play.", "ok");
+      } else {
+        btn.disabled = false;
+        say("That didn't go through. Try again, or email lofisophidev@gmail.com.", "err");
+      }
+    } catch (err){
+      btn.disabled = false;
+      say("Couldn't reach the server. Try again, or email lofisophidev@gmail.com.", "err");
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
