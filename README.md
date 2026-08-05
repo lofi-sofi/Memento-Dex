@@ -1,6 +1,6 @@
 # Memento Dex
 
-**A short game about the things you remember, and the things you don't.**
+**A short game about the things you remember, and the things you don't.** 
 
 A creature collector game about memory — how we keep it, how we lose it, and
 different ways you can meet someone whose reality might be different than yours.
